@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔍 MURDLE Logic Grid v2.0</title>
+    <title>🔍 MURDLE Logic Grid</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>">
-    <meta name="description" content="Resolva puzzles de lógica estilo MURDLE com grades interativas personalizáveis - Formato convencional e separado">
+    <meta name="description" content="Resolva puzzles de lógica estilo MURDLE com grades interativas personalizáveis">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -78,14 +78,13 @@
         const MurdleApp = () => {
             const [categories, setCategories] = useState([
                 { name: 'Suspeitos', items: ['👨‍💼', '👩‍⚕️', '👨‍🍳'] },
-                { name: 'Armas', items: ['🔪', '💊', '🔫'] },
-                { name: 'Locais', items: ['🏠', '🏢', '🌳'] }
+                { name: 'Locais', items: ['🏠', '🏢', '🌳'] },
+                { name: 'Armas', items: ['🔪', '💊', '🔫'] }
             ]);
             
             const [grid, setGrid] = useState({});
             const [darkMode, setDarkMode] = useState(false);
             const [showSettings, setShowSettings] = useState(false);
-            const [gridFormat, setGridFormat] = useState('conventional'); // 'conventional' ou 'separated'
 
             // Estados para células (0: vazio, 1: X, 2: ✓)
             const CELL_STATES = ['', 'X', '✓'];
@@ -102,7 +101,6 @@
                         const data = JSON.parse(savedData);
                         if (data.categories) setCategories(data.categories);
                         if (data.grid) setGrid(data.grid);
-                        if (data.gridFormat) setGridFormat(data.gridFormat);
                     } catch (e) {
                         console.error('Erro ao carregar dados:', e);
                     }
@@ -114,9 +112,9 @@
             }, []);
 
             useEffect(() => {
-                const dataToSave = { categories, grid, gridFormat };
+                const dataToSave = { categories, grid };
                 localStorage.setItem('murdle-data', JSON.stringify(dataToSave));
-            }, [categories, grid, gridFormat]);
+            }, [categories, grid]);
 
             useEffect(() => {
                 localStorage.setItem('murdle-theme', darkMode ? 'dark' : 'light');
@@ -202,7 +200,7 @@
             };
 
             const exportData = () => {
-                const data = { categories, grid, gridFormat };
+                const data = { categories, grid };
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -221,7 +219,6 @@
                             const data = JSON.parse(e.target.result);
                             if (data.categories) setCategories(data.categories);
                             if (data.grid) setGrid(data.grid);
-                            if (data.gridFormat) setGridFormat(data.gridFormat);
                             alert('Dados importados com sucesso!');
                         } catch (error) {
                             alert('Erro ao importar dados!');
@@ -232,130 +229,7 @@
                 event.target.value = '';
             };
 
-            // Renderizar grade convencional (formato livro MURDLE)
-            const renderConventionalGrid = () => {
-                if (categories.length < 3) {
-                    return (
-                        <div className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            A grade convencional requer pelo menos 3 categorias
-                        </div>
-                    );
-                }
-
-                const [suspeitos, armas, locais] = categories;
-                
-                return (
-                    <div className="overflow-auto no-scrollbar">
-                        <div className="inline-block">
-                            {/* Grade única integrada */}
-                            <table className="border-collapse">
-                                <thead>
-                                    <tr>
-                                        <th className="w-16 h-12"></th>
-                                        {/* Headers: SUSPEITOS */}
-                                        {suspeitos.items.map((item, idx) => (
-                                            <th key={`suspeitos-${idx}`} className={`w-16 h-12 text-center text-sm border ${
-                                                darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-50'
-                                            }`}>
-                                                <div className="px-1 break-words">{item}</div>
-                                            </th>
-                                        ))}
-                                        {/* Headers: LOCAIS */}
-                                        {locais.items.map((item, idx) => (
-                                            <th key={`locais-${idx}`} className={`w-16 h-12 text-center text-sm border ${
-                                                darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-50'
-                                            }`}>
-                                                <div className="px-1 break-words">{item}</div>
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {/* Linhas: ARMAS */}
-                                    {armas.items.map((armaItem, armaIdx) => (
-                                        <tr key={`arma-${armaIdx}`}>
-                                            <td className={`w-16 h-12 text-center text-sm border font-medium ${
-                                                darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-50'
-                                            }`}>
-                                                <div className="px-1 break-words">{armaItem}</div>
-                                            </td>
-                                            
-                                            {/* Células: ARMAS × SUSPEITOS (interativas) */}
-                                            {suspeitos.items.map((suspeitoItem, suspeitoIdx) => {
-                                                const state = getCellState(1, armaIdx, 0, suspeitoIdx);
-                                                return (
-                                                    <td 
-                                                        key={`arma-suspeito-${suspeitoIdx}`}
-                                                        className={`w-16 h-12 text-center border cursor-pointer select-none font-bold text-lg transition-colors ${
-                                                            darkMode 
-                                                                ? `border-gray-600 hover:bg-gray-600 ${CELL_COLORS_DARK[state]}` 
-                                                                : `border-gray-300 hover:bg-gray-100 ${CELL_COLORS[state]}`
-                                                        }`}
-                                                        onClick={() => toggleCell(1, armaIdx, 0, suspeitoIdx)}
-                                                    >
-                                                        {CELL_STATES[state]}
-                                                    </td>
-                                                );
-                                            })}
-                                            
-                                            {/* Células: ARMAS × LOCAIS (interativas) */}
-                                            {locais.items.map((localItem, localIdx) => {
-                                                const state = getCellState(1, armaIdx, 2, localIdx);
-                                                return (
-                                                    <td 
-                                                        key={`arma-local-${localIdx}`}
-                                                        className={`w-16 h-12 text-center border cursor-pointer select-none font-bold text-lg transition-colors ${
-                                                            darkMode 
-                                                                ? `border-gray-600 hover:bg-gray-600 ${CELL_COLORS_DARK[state]}` 
-                                                                : `border-gray-300 hover:bg-gray-100 ${CELL_COLORS[state]}`
-                                                        }`}
-                                                        onClick={() => toggleCell(1, armaIdx, 2, localIdx)}
-                                                    >
-                                                        {CELL_STATES[state]}
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    ))}
-                                    
-                                    {/* Linhas: LOCAIS */}
-                                    {locais.items.map((localItem, localIdx) => (
-                                        <tr key={`local-${localIdx}`}>
-                                            <td className={`w-16 h-12 text-center text-sm border font-medium ${
-                                                darkMode ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-300 bg-gray-50'
-                                            }`}>
-                                                <div className="px-1 break-words">{localItem}</div>
-                                            </td>
-                                            
-                                            {/* Células: LOCAIS × SUSPEITOS (interativas) */}
-                                            {suspeitos.items.map((suspeitoItem, suspeitoIdx) => {
-                                                const state = getCellState(2, localIdx, 0, suspeitoIdx);
-                                                return (
-                                                    <td 
-                                                        key={`local-suspeito-${suspeitoIdx}`}
-                                                        className={`w-16 h-12 text-center border cursor-pointer select-none font-bold text-lg transition-colors ${
-                                                            darkMode 
-                                                                ? `border-gray-600 hover:bg-gray-600 ${CELL_COLORS_DARK[state]}` 
-                                                                : `border-gray-300 hover:bg-gray-100 ${CELL_COLORS[state]}`
-                                                        }`}
-                                                        onClick={() => toggleCell(2, localIdx, 0, suspeitoIdx)}
-                                                    >
-                                                        {CELL_STATES[state]}
-                                                    </td>
-                                                );
-                                            })}
-                                            
-                                            {/* Seção removida: LOCAIS × LOCAIS não existe */}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                );
-            };
-
-            // Renderizar grade para duas categorias (formato separado)
+            // Renderizar grade para duas categorias
             const renderGrid = (cat1Index, cat2Index) => {
                 const cat1 = categories[cat1Index];
                 const cat2 = categories[cat2Index];
@@ -419,7 +293,7 @@
                         {/* Header */}
                         <div className="flex items-center justify-between mb-6">
                             <h1 className={`text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                                🔍 MURDLE Logic Grid <span className="text-lg font-normal opacity-75">v2.0</span>
+                                🔍 MURDLE Logic Grid
                             </h1>
                             
                             <div className="flex gap-2">
@@ -443,44 +317,6 @@
                                     <Icons.Settings />
                                 </button>
                             </div>
-                        </div>
-
-                        {/* Grid Format Selector */}
-                        <div className={`mb-6 p-4 rounded-lg ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'} border`}>
-                            <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                                Formato da Grade:
-                            </h3>
-                            <div className="flex flex-wrap gap-3">
-                                <button
-                                    onClick={() => setGridFormat('conventional')}
-                                    className={`px-4 py-2 rounded-lg transition-colors text-sm ${
-                                        gridFormat === 'conventional' 
-                                            ? 'bg-blue-500 text-white' 
-                                            : darkMode 
-                                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                                >
-                                    📖 Convencional (Livro)
-                                </button>
-                                <button
-                                    onClick={() => setGridFormat('separated')}
-                                    className={`px-4 py-2 rounded-lg transition-colors text-sm ${
-                                        gridFormat === 'separated' 
-                                            ? 'bg-blue-500 text-white' 
-                                            : darkMode 
-                                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                                >
-                                    📋 Separado (3 Seções)
-                                </button>
-                            </div>
-                            <p className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {gridFormat === 'conventional' 
-                                    ? 'Grade unificada como nos livros MURDLE originais' 
-                                    : 'Grade dividida em seções separadas para cada combinação'}
-                            </p>
                         </div>
 
                         {/* Settings Panel */}
@@ -576,3 +412,44 @@
                                 Clique nas células para alternar: vazio → X → ✓
                             </div>
                             
+                            {/* Render all category combinations */}
+                            {categories.length >= 2 && categories.map((_, i) => 
+                                categories.slice(i + 1).map((_, j) => 
+                                    renderGrid(i, i + j + 1)
+                                )
+                            )}
+                            
+                            {categories.length < 2 && (
+                                <div className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    Configure pelo menos 2 categorias nas configurações para começar
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Instructions */}
+                        <div className={`mt-6 p-4 rounded-lg text-sm ${
+                            darkMode ? 'bg-gray-800 text-gray-400 border-gray-600' : 'bg-blue-50 text-blue-800 border-blue-200'
+                        } border`}>
+                            <h4 className="font-semibold mb-2">Como usar:</h4>
+                            <ul className="space-y-1 list-disc list-inside">
+                                <li>Clique em uma célula para marcar X (impossível) ou ✓ (correto)</li>
+                                <li>Use as configurações para personalizar categorias e itens (clique nos itens para editar)</li>
+                                <li>Seus dados são salvos automaticamente no navegador</li>
+                                <li>Exporte/importe puzzles para compartilhar</li>
+                            </ul>
+                        </div>
+
+                        {/* Footer */}
+                        <div className={`mt-8 text-center text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                            MURDLE Logic Grid v1.0 | Puzzles de lógica interativos
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Renderizar app
+        ReactDOM.render(<MurdleApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
