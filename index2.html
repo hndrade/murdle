@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🔍 MURDLE Logic Grid v2.1</title>
+
+  <!-- React e Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Favicon -->
+  <link
+    rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 
+          viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔍</text></svg>"
+  />
+
+  <!-- SEO -->
+  <meta
+    name="description"
+    content="Resolva puzzles de lógica estilo MURDLE com grades interativas personalizáveis - Formato convencional autêntico"
+  />
+  <meta
+    name="keywords"
+    content="MURDLE, puzzle, lógica, grade, logic grid, deduction, mystery"
+  />
+  <meta name="author" content="MURDLE Logic Grid" />
+  <meta property="og:title" content="MURDLE Logic Grid v2.1" />
+  <meta
+    property="og:description"
+    content="Ferramenta interativa para resolver puzzles de lógica estilo MURDLE"
+  />
+  <meta property="og:type" content="website" />
+
+  <!-- Estilos -->
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+        'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .rotate-text {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      white-space: nowrap;
+    }
+    .cell-transition {
+      transition: all 0.15s ease-in-out;
+    }
+    .glass-effect {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .dark .glass-effect {
+      background: rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const App = () => {
+      const [categories, setCategories] = useState([
+        { name: "Suspeitos", items: ["", "", ""] },
+        { name: "Locais", items: ["", "", ""] },
+        { name: "Armas", items: ["", "", ""] },
+      ]);
+
+      const [grid, setGrid] = useState([]);
+      const [darkMode, setDarkMode] = useState(false);
+
+      // Inicializa a grade
+      useEffect(() => {
+        const totalItems = categories.reduce(
+          (sum, cat) => sum + cat.items.length,
+          0
+        );
+        const newGrid = Array(totalItems)
+          .fill(null)
+          .map(() => Array(totalItems).fill(null));
+        setGrid(newGrid);
+      }, [categories]);
+
+      // Alternar valores da célula (✔, ✖, vazio)
+      const toggleCell = (row, col) => {
+        if (row === col) return;
+
+        setGrid((prev) => {
+          const newGrid = prev.map((r) => [...r]);
+          const current = newGrid[row][col];
+          newGrid[row][col] = current === "✔" ? "✖" : current === "✖" ? null : "✔";
+          return newGrid;
+        });
+      };
+
+      // Editar item de categoria
+      const handleCategoryChange = (catIndex, itemIndex, value) => {
+        setCategories((prev) =>
+          prev.map((cat, i) =>
+            i === catIndex
+              ? {
+                  ...cat,
+                  items: cat.items.map((item, j) =>
+                    j === itemIndex ? value : item
+                  ),
+                }
+              : cat
+          )
+        );
+      };
+
+      // Adicionar nova linha em categoria
+      const addItem = (catIndex) => {
+        setCategories((prev) =>
+          prev.map((cat, i) =>
+            i === catIndex ? { ...cat, items: [...cat.items, ""] } : cat
+          )
+        );
+      };
+
+      // Construir grade com rótulos
+      const buildGrid = () => {
+        let headers = [];
+        categories.forEach((cat) => headers.push(...cat.items));
+
+        return (
+          <div className="overflow-auto no-scrollbar max-w-full">
+            <table className="border-collapse mx-auto">
+              <thead>
+                <tr>
+                  <th className="w-24 h-24"></th>
+                  {headers.map((h, i) => (
+                    <th
+                      key={i}
+                      className="border border-gray-400 dark:border-gray-600 p-2 text-sm rotate-text bg-gray-200 dark:bg-gray-800"
+                    >
+                      {h || "•"}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {headers.map((rowHeader, rowIndex) => (
+                  <tr key={rowIndex}>
+                    <td className="border border-gray-400 dark:border-gray-600 p-2 text-sm bg-gray-200 dark:bg-gray-800">
+                      {rowHeader || "•"}
+                    </td>
+                    {headers.map((_, colIndex) => (
+                      <td
+                        key={colIndex}
+                        className={`border border-gray-300 dark:border-gray-700 w-10 h-10 text-center cursor-pointer select-none cell-transition
+                          ${
+                            rowIndex === colIndex
+                              ? "bg-gray-300 dark:bg-gray-700"
+                              : "hover:bg-yellow-200 dark:hover:bg-yellow-800"
+                          }`}
+                        onClick={() => toggleCell(rowIndex, colIndex)}
+                      >
+                        {grid[rowIndex]?.[colIndex]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-start p-4 gap-6">
+          {/* Título */}
+          <header className="w-full flex justify-between items-center glass-effect rounded-2xl p-4 shadow-md">
+            <h1 className="text-2xl font-bold">🔍 MURDLE Logic Grid</h1>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="px-4 py-2 rounded-lg bg-indigo-500 text-white shadow-md hover:bg-indigo-600"
+            >
+              {darkMode ? "☀️ Claro" : "🌙 Escuro"}
+            </button>
+          </header>
+
+          {/* Categorias */}
+          <section className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-4">
+            {categories.map((cat, catIndex) => (
+              <div
+                key={catIndex}
+                className="p-4 rounded-2xl glass-effect shadow-md flex flex-col gap-2"
+              >
+                <h2 className="text-lg font-semibold">{cat.name}</h2>
+                {cat.items.map((item, itemIndex) => (
+                  <input
+                    key={itemIndex}
+                    type="text"
+                    value={item}
+                    placeholder="Digite aqui..."
+                    onChange={(e) =>
+                      handleCategoryChange(catIndex, itemIndex, e.target.value)
+                    }
+                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring focus:ring-indigo-400"
+                  />
+                ))}
+                <button
+                  onClick={() => addItem(catIndex)}
+                  className="mt-2 px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 shadow"
+                >
+                  ➕ Adicionar
+                </button>
+              </div>
+            ))}
+          </section>
+
+          {/* Grade */}
+          <section className="w-full max-w-6xl p-4 rounded-2xl glass-effect shadow-md">
+            {buildGrid()}
+          </section>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
